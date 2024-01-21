@@ -1,0 +1,40 @@
+function load_project_dir() {
+    local currentDir=$(pwd)
+    while [[ "$currentDir" != "$HOME" ]]; do
+        if [[ -f "$currentDir/.gwtconfig" ]]; then
+            PROJECTS_DIR=$(head -n 1 "$currentDir/.gwtconfig" | sed 's:/*$::')
+            return
+        else
+            # Move to the parent directory
+            currentDir=$(dirname "$currentDir")
+        fi
+    done
+    echo "No .gwtconfig file found in the current or any parent directories."
+    return 1
+}
+
+function gwt() {
+    if [[ -z "$1" ]] || [[ -z "$2" ]]; then
+        echo "Usage: gwt <project-name> <branch-name>"
+        return 1
+    fi
+
+    # Load PROJECTS_DIR from .gwtconfig
+    load_project_dir || return 1
+
+    local projectName="$1"
+    local branchName="$2"
+    local worktreePath="${PROJECTS_DIR}/${projectName}/${branchName}"
+
+    if [[ ! -d "$worktreePath" ]]; then
+        echo "Worktree for branch '$branchName' in project '$projectName' does not exist at $worktreePath."
+        return 1
+    fi
+
+    if cd "$worktreePath"; then
+        echo "Switched to the worktree for branch '$branchName' in project '$projectName'."
+    else
+        echo "Failed to switch to the worktree for branch '$branchName' in project '$projectName'."
+        return 1
+    fi
+}
